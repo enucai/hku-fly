@@ -1,0 +1,797 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>港大人会飞</title>
+    <link rel="icon" href="assets/University_of_Hong_Kong_square.png" />
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #08111f;
+        --panel: rgba(12, 20, 34, 0.72);
+        --line: rgba(157, 191, 226, 0.18);
+        --text: #e8f1fb;
+        --muted: #9db5ca;
+        --accent: #88c7ff;
+        --accent-2: #83e58f;
+        --danger: #ff7676;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+      }
+
+      body {
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 20px;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+          "Segoe UI", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top, #14375f 0%, rgba(20, 55, 95, 0.16) 30%, transparent 60%),
+          linear-gradient(180deg, #08111f 0%, #0a1627 52%, #09101b 100%);
+      }
+
+      .shell {
+        width: min(100%, 760px);
+        display: grid;
+        gap: 14px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 18px;
+        font-weight: 700;
+      }
+
+      .brand img {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #fff;
+        padding: 2px;
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.16);
+      }
+
+      .stats {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .pill {
+        padding: 8px 12px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--panel);
+        backdrop-filter: blur(10px);
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      .pill strong {
+        color: var(--text);
+      }
+
+      .stage {
+        position: relative;
+        width: min(92vw, 420px);
+        aspect-ratio: 420 / 640;
+        margin: 0 auto;
+      }
+
+      canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        border-radius: 22px;
+        box-shadow: 0 24px 64px rgba(0, 0, 0, 0.38);
+        background:
+          linear-gradient(180deg, #98d8ff 0%, #c8efff 42%, #eaf9ff 58%, #89d16b 58%, #69b04a 100%);
+      }
+
+      .overlay {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        pointer-events: none;
+        padding: 18px;
+      }
+
+      .overlay .card {
+        pointer-events: none;
+        max-width: 90%;
+        text-align: center;
+        padding: 14px 16px;
+        border-radius: 16px;
+        background: rgba(8, 16, 30, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        backdrop-filter: blur(10px);
+        color: #f5fbff;
+      }
+
+      .overlay .title {
+        font-size: 18px;
+        font-weight: 700;
+        margin: 0 0 6px;
+      }
+
+      .overlay .desc {
+        margin: 0;
+        font-size: 13px;
+        line-height: 1.45;
+        color: rgba(245, 251, 255, 0.84);
+      }
+
+      .controls {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        appearance: none;
+        border: 1px solid var(--line);
+        background: var(--panel);
+        color: var(--text);
+        border-radius: 999px;
+        padding: 10px 14px;
+        font: inherit;
+        cursor: pointer;
+        transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+      }
+
+      button:hover {
+        transform: translateY(-1px);
+        border-color: rgba(136, 199, 255, 0.5);
+        background: rgba(18, 30, 48, 0.84);
+      }
+
+      .footer {
+        text-align: center;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .accent {
+        color: var(--accent);
+      }
+
+      .danger {
+        color: var(--danger);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <div class="topbar">
+        <div class="brand">
+          <img src="assets/University_of_Hong_Kong_square.png" alt="港大校徽" />
+          <span>港大人会飞</span>
+        </div>
+        <div class="stats">
+          <div class="pill">当前分数 <strong id="score">0</strong></div>
+          <div class="pill">最高分 <strong id="best">0</strong></div>
+          <div class="pill" id="stateLabel">未开始</div>
+        </div>
+      </div>
+
+      <section class="stage" aria-label="Flappy Bird game">
+        <canvas id="game" width="420" height="640"></canvas>
+        <div class="overlay" id="overlay">
+          <div class="card" id="overlayCard">
+            <p class="title" id="overlayTitle">点击或按空格开始</p>
+            <p class="desc" id="overlayDesc">校徽会跟着你的节奏往前飞，尽量别撞上管道。</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="controls">
+        <button id="restartBtn" type="button">↻ 重开</button>
+      </div>
+
+      <div class="footer">点击、空格或 ↑ 开始飞行。</div>
+    </main>
+
+    <script>
+      const canvas = document.getElementById("game");
+      const ctx = canvas.getContext("2d");
+      const scoreEl = document.getElementById("score");
+      const bestEl = document.getElementById("best");
+      const stateLabel = document.getElementById("stateLabel");
+      const overlay = document.getElementById("overlay");
+      const overlayTitle = document.getElementById("overlayTitle");
+      const overlayDesc = document.getElementById("overlayDesc");
+      const restartBtn = document.getElementById("restartBtn");
+
+      const W = 420;
+      const H = 640;
+      const GROUND_Y = 560;
+      const BIRD_X = 116;
+      const BIRD_R = 22;
+      const PIPE_W = 74;
+      const PIPE_GAP = 130;
+      const PIPE_SPEED = 165;
+      const PIPE_SPACING = 332;
+      const PIPE_INTERVAL = PIPE_SPACING / PIPE_SPEED;
+      const GRAVITY = 1630;
+      const FLAP_VELOCITY = -300;
+      const GAP_MIN = 142;
+      const GAP_MAX = 396;
+      const WHIP_STRIKE_DURATION = 0.08;
+      const WHIP_SNAP_DURATION = 0.05;
+      const WHIP_FALL_GRAVITY = 860;
+      const WHIP_FALL_X_VEL = 12;
+      const DPR = Math.max(1, window.devicePixelRatio || 1);
+      let state;
+      let whipFx = createWhipState();
+
+      const seal = new Image();
+      seal.src = "assets/University_of_Hong_Kong_square.png";
+
+      let sealReady = false;
+      seal.onload = () => {
+        sealReady = true;
+      };
+
+      const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+      function resizeCanvas() {
+        canvas.width = Math.round(W * DPR);
+        canvas.height = Math.round(H * DPR);
+        canvas.style.width = W + "px";
+        canvas.style.height = H + "px";
+        ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+      }
+
+      function randn() {
+        let u = 0;
+        let v = 0;
+        while (u === 0) u = Math.random();
+        while (v === 0) v = Math.random();
+        return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+      }
+
+      function createFreshState() {
+        const startGap = 300;
+        return {
+          mode: "ready",
+          score: 0,
+          best: 0,
+          birdY: H * 0.45,
+          birdVY: 0,
+          birdAngle: 0,
+          pipes: [
+            makePipe(W + 140, startGap),
+            makePipe(W + 140 + PIPE_SPACING, clamp(startGap + randn() * 78, GAP_MIN, GAP_MAX))
+          ],
+          spawnTimer: 0.55,
+          lastGapY: startGap
+        };
+      }
+
+      function makePipe(x, gapY) {
+        return {
+          x,
+          gapY,
+          scored: false
+        };
+      }
+
+      function chooseNextGap(previousGapY) {
+        const drift = clamp(randn() * 93 + (Math.random() < 0.24 ? randn() * 93 : 0), -132, 132);
+        return clamp(previousGapY + drift, GAP_MIN, GAP_MAX);
+      }
+
+      function freshPipeSet(seedGap) {
+        return [
+          makePipe(W + 120, seedGap),
+          makePipe(W + 120 + PIPE_SPACING, chooseNextGap(seedGap))
+        ];
+      }
+
+      function resetGame(keepBest = true) {
+        const best = keepBest ? state.best : 0;
+        state = createFreshState();
+        state.best = best;
+        whipFx = createWhipState();
+        updateHud();
+        setOverlay("点击或按空格开始", "校徽会跟着你的节奏往前飞，尽量别撞上管道。", true);
+      }
+
+      function startGame() {
+        if (state.mode === "playing") return;
+        state.mode = "playing";
+        if (state.score === 0 && state.birdY === H * 0.45 && state.birdVY === 0 && state.pipes.length === 0) {
+          state.pipes = freshPipeSet(state.lastGapY || 300);
+        }
+        clearOverlay();
+        updateHud();
+      }
+
+      function gameOver() {
+        if (state.mode === "gameover") return;
+        state.mode = "gameover";
+        state.best = Math.max(state.best, state.score);
+        whipFx = createWhipState();
+        updateHud();
+        setOverlay(
+          "游戏结束",
+          `本局 ${state.score} 分，最高 ${state.best} 分。点击画面或点重开继续。`,
+          true
+        );
+      }
+
+      function flap({ allowRestart = false } = {}) {
+        if (state.mode === "ready") startGame();
+        if (state.mode === "gameover") {
+          if (allowRestart) {
+            resetGame(true);
+            startGame();
+          }
+          return;
+        }
+        state.birdVY = FLAP_VELOCITY;
+        state.birdAngle = -0.45;
+      }
+
+      function triggerWhip() {
+        if (!whipFx) whipFx = createWhipState();
+        whipFx.phase = "strike";
+        whipFx.t = 0;
+        whipFx.snapT = 0;
+        whipFx.fallVY = 0;
+        whipFx.fallVX = WHIP_FALL_X_VEL;
+        whipFx.tipX = whipFx.restX;
+        whipFx.tipY = whipFx.restY;
+      }
+
+      function setOverlay(title, desc, show = true) {
+        overlay.style.display = show ? "grid" : "none";
+        overlayTitle.textContent = title;
+        overlayDesc.textContent = desc;
+      }
+
+      function clearOverlay() {
+        overlay.style.display = "none";
+      }
+
+      function createWhipState() {
+        return {
+          phase: "idle",
+          t: 0,
+          snapT: 0,
+          restX: 54,
+          restY: 250,
+          tipX: 54,
+          tipY: 250,
+          fallVX: 0,
+          fallVY: 0
+        };
+      }
+
+      function updateHud() {
+        scoreEl.textContent = String(state.score);
+        bestEl.textContent = String(state.best);
+        stateLabel.textContent =
+          state.mode === "playing" ? "进行中" : state.mode === "gameover" ? "已结束" : "待命";
+        stateLabel.className = "pill " + (state.mode === "gameover" ? "danger" : "accent");
+      }
+
+      function spawnPipe() {
+        const last = state.pipes[state.pipes.length - 1];
+        const gapY = chooseNextGap(last ? last.gapY : state.lastGapY);
+        const x = last ? last.x + PIPE_SPACING : W + 120;
+        state.lastGapY = gapY;
+        state.pipes.push(makePipe(x, gapY));
+      }
+
+      function drawBackground() {
+        ctx.clearRect(0, 0, W, H);
+
+        const sky = ctx.createLinearGradient(0, 0, 0, GROUND_Y);
+        sky.addColorStop(0, "#96d7ff");
+        sky.addColorStop(0.55, "#dff5ff");
+        sky.addColorStop(1, "#eefcff");
+        ctx.fillStyle = sky;
+        ctx.fillRect(0, 0, W, GROUND_Y);
+
+        drawCloud(64, 82, 1.0);
+        drawCloud(194, 120, 0.72);
+        drawCloud(318, 74, 0.86);
+        drawCloud(348, 180, 0.64);
+
+        const ground = ctx.createLinearGradient(0, GROUND_Y, 0, H);
+        ground.addColorStop(0, "#77bf52");
+        ground.addColorStop(1, "#4f8e34");
+        ctx.fillStyle = ground;
+        ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
+
+        ctx.fillStyle = "rgba(255,255,255,0.16)";
+        ctx.fillRect(0, GROUND_Y, W, 6);
+
+        for (let x = -20; x < W + 40; x += 34) {
+          ctx.fillStyle = "rgba(30, 78, 34, 0.18)";
+          ctx.fillRect(x, GROUND_Y + 18, 18, 4);
+        }
+      }
+
+      function drawCloud(x, y, scale) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.scale(scale, scale);
+        ctx.fillStyle = "rgba(255,255,255,0.76)";
+        blob(-26, 0, 26);
+        blob(0, -12, 34);
+        blob(28, 0, 22);
+        ctx.fillRect(-34, 0, 72, 18);
+        ctx.restore();
+      }
+
+      function blob(x, y, r) {
+        ctx.beginPath();
+        ctx.arc(x, y, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function drawPipe(pipe) {
+        const topHeight = pipe.gapY - PIPE_GAP / 2;
+        const bottomY = pipe.gapY + PIPE_GAP / 2;
+        const bottomHeight = GROUND_Y - bottomY;
+        const body = ctx.createLinearGradient(pipe.x, 0, pipe.x + PIPE_W, 0);
+        body.addColorStop(0, "#2a8b3b");
+        body.addColorStop(0.5, "#5bd45f");
+        body.addColorStop(1, "#1e6f30");
+        const mouth = ctx.createLinearGradient(pipe.x, 0, pipe.x + PIPE_W, 0);
+        mouth.addColorStop(0, "#1f6e30");
+        mouth.addColorStop(0.5, "#7bf176");
+        mouth.addColorStop(1, "#236f33");
+        const mouthW = PIPE_W + 24;
+        const mouthH = 22;
+        const mouthX = pipe.x - 12;
+
+        if (topHeight > 0) {
+          ctx.fillStyle = "rgba(0,0,0,0.14)";
+          ctx.fillRect(pipe.x + 3, 3, PIPE_W, topHeight);
+          ctx.fillStyle = body;
+          ctx.fillRect(pipe.x, 0, PIPE_W, topHeight);
+          ctx.fillStyle = "rgba(255,255,255,0.14)";
+          ctx.fillRect(pipe.x + 8, 0, 10, topHeight);
+          ctx.fillStyle = mouth;
+          ctx.fillRect(mouthX, Math.max(0, topHeight - mouthH), mouthW, mouthH);
+          ctx.fillStyle = "rgba(255,255,255,0.12)";
+          ctx.fillRect(mouthX + 6, Math.max(0, topHeight - mouthH + 4), mouthW - 12, 4);
+        }
+
+        if (bottomHeight > 0) {
+          ctx.fillStyle = "rgba(0,0,0,0.14)";
+          ctx.fillRect(pipe.x + 3, bottomY + 3, PIPE_W, bottomHeight);
+          ctx.fillStyle = body;
+          ctx.fillRect(pipe.x, bottomY, PIPE_W, bottomHeight);
+          ctx.fillStyle = "rgba(255,255,255,0.14)";
+          ctx.fillRect(pipe.x + PIPE_W - 18, bottomY, 10, bottomHeight);
+          ctx.fillStyle = mouth;
+          ctx.fillRect(mouthX, bottomY, mouthW, mouthH);
+          ctx.fillStyle = "rgba(255,255,255,0.12)";
+          ctx.fillRect(mouthX + 6, bottomY + 4, mouthW - 12, 4);
+        }
+      }
+
+      function drawBird() {
+        ctx.save();
+        ctx.translate(BIRD_X, state.birdY);
+        ctx.rotate(clamp(state.birdAngle, -0.9, 1.2));
+
+        const size = 68;
+        if (sealReady) {
+          ctx.beginPath();
+          ctx.arc(0, 0, size / 2, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255,255,255,0.2)";
+          ctx.fill();
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(0, 0, size / 2 - 2, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(seal, -size / 2, -size / 2, size, size);
+          ctx.restore();
+          ctx.lineWidth = 3;
+          ctx.strokeStyle = "rgba(255,255,255,0.72)";
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = "#fff";
+          ctx.beginPath();
+          ctx.arc(0, 0, 18, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+      }
+
+      function drawWhip() {
+        if (!whipFx) return;
+
+        const phase = whipFx.phase;
+        const ropeStartX = -18;
+        const ropeStartY = whipFx.restY;
+        const handleX = -12;
+        const handleY = whipFx.restY;
+        const isStrike = phase === "strike";
+        const isSnap = phase === "snap";
+        const isFall = phase === "fall";
+        const crack = isSnap ? 1 - clamp(whipFx.snapT / WHIP_SNAP_DURATION, 0, 1) : 0;
+        const sway = isFall ? Math.sin(performance.now() * 0.004) * 4 : 0;
+        const tipX = whipFx.tipX + sway;
+        const tipY = whipFx.tipY;
+        const controlX = isStrike
+          ? tipX - 42
+          : isSnap
+            ? tipX - 28
+            : tipX * 0.3 + 28;
+        const controlY = isStrike
+          ? Math.min(whipFx.restY - 70, tipY - 56)
+          : isSnap
+            ? tipY - 34
+            : whipFx.restY - 34;
+
+        ctx.save();
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        ctx.strokeStyle = "rgba(61, 35, 15, 0.95)";
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.moveTo(ropeStartX, ropeStartY);
+        ctx.quadraticCurveTo(controlX, controlY, tipX, tipY);
+        ctx.stroke();
+
+        ctx.strokeStyle = "rgba(245, 214, 161, 0.96)";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(ropeStartX, ropeStartY + 1);
+        ctx.quadraticCurveTo(controlX, controlY, tipX, tipY);
+        ctx.stroke();
+
+        ctx.strokeStyle = "rgba(255,255,255,0.8)";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(ropeStartX + 4, ropeStartY - 1);
+        ctx.quadraticCurveTo(controlX + 6, controlY - 4, tipX, tipY);
+        ctx.stroke();
+
+        ctx.fillStyle = "rgba(228, 173, 96, 0.96)";
+        ctx.fillRect(handleX - 2, handleY - 16, 16, 32);
+        ctx.fillStyle = "rgba(92, 55, 27, 0.96)";
+        ctx.fillRect(handleX + 2, handleY - 12, 6, 24);
+        ctx.fillStyle = "rgba(255, 239, 198, 0.95)";
+        ctx.fillRect(handleX + 8, handleY - 9, 4, 18);
+
+        if (isSnap || isStrike) {
+          ctx.save();
+          ctx.globalAlpha = isSnap ? crack : 0.55;
+          ctx.strokeStyle = "rgba(255,255,255,0.96)";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(tipX - 8, tipY - 2);
+          ctx.lineTo(tipX - 18, tipY - 8);
+          ctx.moveTo(tipX - 8, tipY - 2);
+          ctx.lineTo(tipX - 10, tipY - 16);
+          ctx.moveTo(tipX - 8, tipY - 2);
+          ctx.lineTo(tipX + 2, tipY - 14);
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        ctx.restore();
+      }
+
+      function updateWhip(dt) {
+        if (!whipFx) return;
+
+        if (whipFx.phase === "strike") {
+          whipFx.t += dt;
+          const p = clamp(whipFx.t / WHIP_STRIKE_DURATION, 0, 1);
+          const e = 1 - Math.pow(1 - p, 4);
+          const targetX = BIRD_X - 8;
+          const targetY = state.birdY - 16;
+          whipFx.tipX = whipFx.restX + (targetX - whipFx.restX) * e + Math.sin(p * Math.PI) * 10;
+          whipFx.tipY = whipFx.restY + (targetY - whipFx.restY) * e - Math.sin(p * Math.PI) * 10;
+          if (p >= 1) {
+            whipFx.phase = "snap";
+            whipFx.snapT = 0;
+            whipFx.tipX = targetX;
+            whipFx.tipY = targetY;
+          }
+          return;
+        }
+
+        if (whipFx.phase === "snap") {
+          whipFx.snapT += dt;
+          if (whipFx.snapT >= WHIP_SNAP_DURATION) {
+            whipFx.phase = "fall";
+            whipFx.fallVY = 26;
+            whipFx.fallVX = WHIP_FALL_X_VEL;
+          }
+          return;
+        }
+
+        if (whipFx.phase === "fall") {
+          whipFx.fallVY += WHIP_FALL_GRAVITY * dt;
+          whipFx.tipY += whipFx.fallVY * dt;
+          whipFx.tipX += whipFx.fallVX * dt;
+          if (whipFx.tipY >= GROUND_Y - 26) {
+            whipFx.phase = "idle";
+            whipFx.restX = clamp(whipFx.tipX, 40, 76);
+            whipFx.restY = GROUND_Y - 26;
+            whipFx.tipX = whipFx.restX;
+            whipFx.tipY = whipFx.restY;
+            whipFx.fallVY = 0;
+            whipFx.fallVX = 0;
+          }
+          return;
+        }
+
+        const idleSway = Math.sin(performance.now() * 0.0022) * 2;
+        whipFx.tipX = whipFx.restX + idleSway;
+        whipFx.tipY = whipFx.restY + Math.sin(performance.now() * 0.0016) * 1.5;
+      }
+
+      function drawHud() {
+        ctx.save();
+        ctx.fillStyle = "rgba(255,255,255,0.94)";
+        ctx.font = "700 38px ui-sans-serif, system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.shadowColor = "rgba(0, 0, 0, 0.18)";
+        ctx.shadowBlur = 8;
+        ctx.fillText(String(state.score), W / 2, 76);
+        ctx.restore();
+
+        if (state.mode !== "playing") {
+          ctx.save();
+          ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
+          ctx.fillRect(0, 0, W, H);
+          ctx.restore();
+        }
+      }
+
+      function drawFrame() {
+        drawBackground();
+
+        for (const pipe of state.pipes) {
+          drawPipe(pipe);
+        }
+
+        drawBird();
+        drawWhip();
+        drawHud();
+      }
+
+      function update(dt) {
+        updateWhip(dt);
+        if (state.mode !== "playing") {
+          drawFrame();
+          return;
+        }
+
+        state.birdVY += GRAVITY * dt;
+        state.birdY += state.birdVY * dt;
+        state.birdAngle = clamp(state.birdVY / 700, -0.9, 1.1);
+
+        for (const pipe of state.pipes) {
+          pipe.x -= PIPE_SPEED * dt;
+          if (!pipe.scored && pipe.x + PIPE_W < BIRD_X - BIRD_R) {
+            pipe.scored = true;
+            state.score += 1;
+            state.best = Math.max(state.best, state.score);
+            updateHud();
+          }
+        }
+
+        while (state.pipes.length && state.pipes[0].x + PIPE_W < -20) {
+          state.pipes.shift();
+        }
+
+        state.spawnTimer += dt;
+        while (state.spawnTimer >= PIPE_INTERVAL) {
+          state.spawnTimer -= PIPE_INTERVAL;
+          spawnPipe();
+        }
+
+        const birdTop = state.birdY - BIRD_R;
+        const birdBottom = state.birdY + BIRD_R;
+        const birdLeft = BIRD_X - BIRD_R;
+        const birdRight = BIRD_X + BIRD_R;
+
+        if (birdTop <= 0 || birdBottom >= GROUND_Y) {
+          gameOver();
+        }
+
+        for (const pipe of state.pipes) {
+          const withinX = birdRight > pipe.x && birdLeft < pipe.x + PIPE_W;
+          if (!withinX) continue;
+          const gapTop = pipe.gapY - PIPE_GAP / 2;
+          const gapBottom = pipe.gapY + PIPE_GAP / 2;
+          if (birdTop < gapTop || birdBottom > gapBottom) {
+            gameOver();
+            break;
+          }
+        }
+
+        drawFrame();
+      }
+
+      let lastTs = performance.now();
+      function loop(ts) {
+        const dt = Math.min(0.033, (ts - lastTs) / 1000);
+        lastTs = ts;
+        update(dt);
+        requestAnimationFrame(loop);
+      }
+
+      function boot() {
+        resizeCanvas();
+        state = createFreshState();
+        setOverlay("点击或按空格开始", "校徽会跟着你的节奏往前飞，尽量别撞上管道。", true);
+        updateHud();
+        drawFrame();
+        requestAnimationFrame(loop);
+      }
+
+      restartBtn.addEventListener("click", () => {
+        resetGame(true);
+        startGame();
+      });
+
+      window.addEventListener("keydown", (event) => {
+        if (event.code === "Space" || event.code === "ArrowUp" || event.code === "KeyW") {
+          event.preventDefault();
+          if (event.code === "Space" && state.mode !== "gameover") {
+            triggerWhip();
+          }
+          flap({ allowRestart: false });
+        }
+        if (event.code === "KeyR") {
+          event.preventDefault();
+          whipFx = createWhipState();
+          resetGame(true);
+          startGame();
+        }
+      });
+
+      canvas.addEventListener("pointerdown", () => {
+        flap({ allowRestart: true });
+      });
+
+      window.addEventListener("resize", () => {
+        resizeCanvas();
+        drawFrame();
+      });
+
+      boot();
+    </script>
+  </body>
+</html>
