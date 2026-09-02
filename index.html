@@ -360,6 +360,13 @@
         state.birdAngle = -0.45;
       }
 
+      function flapWithWhip(options = {}) {
+        if (state.mode !== "gameover") {
+          triggerWhip();
+        }
+        flap(options);
+      }
+
       function triggerWhip() {
         if (!whipFx) whipFx = createWhipState();
         whipFx.phase = "strike";
@@ -769,10 +776,7 @@
       window.addEventListener("keydown", (event) => {
         if (event.code === "Space" || event.code === "ArrowUp" || event.code === "KeyW") {
           event.preventDefault();
-          if (event.code === "Space" && state.mode !== "gameover") {
-            triggerWhip();
-          }
-          flap({ allowRestart: false });
+          flapWithWhip({ allowRestart: false });
         }
         if (event.code === "KeyR") {
           event.preventDefault();
@@ -783,7 +787,7 @@
       });
 
       canvas.addEventListener("pointerdown", () => {
-        flap({ allowRestart: true });
+        flapWithWhip({ allowRestart: true });
       });
 
       window.addEventListener("resize", () => {
