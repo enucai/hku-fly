@@ -30,10 +30,10 @@
       }
 
       body {
-        min-height: 100vh;
+        min-height: 100svh;
         display: grid;
-        place-items: center;
-        padding: 20px;
+        place-items: start center;
+        padding: clamp(12px, 3vw, 20px);
         font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
           "Segoe UI", sans-serif;
         color: var(--text);
@@ -44,9 +44,10 @@
       }
 
       .shell {
-        width: min(100%, 760px);
+        width: min(100%, 420px, calc((100svh - 240px) * 420 / 640));
         display: grid;
         gap: 14px;
+        justify-items: stretch;
       }
 
       .topbar {
@@ -97,9 +98,8 @@
 
       .stage {
         position: relative;
-        width: min(92vw, 420px);
+        width: 100%;
         aspect-ratio: 420 / 640;
-        margin: 0 auto;
       }
 
       canvas {
@@ -181,6 +181,22 @@
         font-size: 12px;
       }
 
+      .topbar,
+      .controls,
+      .footer {
+        width: 100%;
+      }
+
+      @media (max-width: 700px) {
+        body {
+          padding: 10px;
+        }
+
+        .shell {
+          width: min(100%, calc((100svh - 220px) * 420 / 640));
+        }
+      }
+
       .accent {
         color: var(--accent);
       }
@@ -251,6 +267,7 @@
       const WHIP_FALL_GRAVITY = 860;
       const WHIP_FALL_X_VEL = 12;
       const DPR = Math.max(1, window.devicePixelRatio || 1);
+      const stage = document.querySelector(".stage");
       let state;
       let whipFx = createWhipState();
 
@@ -265,11 +282,15 @@
       const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
       function resizeCanvas() {
-        canvas.width = Math.round(W * DPR);
-        canvas.height = Math.round(H * DPR);
-        canvas.style.width = W + "px";
-        canvas.style.height = H + "px";
-        ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+        const rect = stage.getBoundingClientRect();
+        const cssW = Math.max(1, rect.width);
+        const cssH = Math.max(1, rect.height);
+        const scale = cssW / W;
+        canvas.width = Math.round(cssW * DPR);
+        canvas.height = Math.round(cssH * DPR);
+        canvas.style.width = cssW + "px";
+        canvas.style.height = cssH + "px";
+        ctx.setTransform(scale * DPR, 0, 0, scale * DPR, 0, 0);
         ctx.imageSmoothingEnabled = true;
         ctx.imageSmoothingQuality = "high";
       }
@@ -799,6 +820,13 @@
         resizeCanvas();
         drawFrame();
       });
+
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", () => {
+          resizeCanvas();
+          drawFrame();
+        });
+      }
 
       boot();
     </script>
