@@ -40,6 +40,7 @@
         background:
           radial-gradient(circle at top, #14375f 0%, rgba(20, 55, 95, 0.16) 30%, transparent 60%),
           linear-gradient(180deg, #08111f 0%, #0a1627 52%, #09101b 100%);
+        overscroll-behavior: none;
       }
 
       .shell {
@@ -109,6 +110,10 @@
         box-shadow: 0 24px 64px rgba(0, 0, 0, 0.38);
         background:
           linear-gradient(180deg, #98d8ff 0%, #c8efff 42%, #eaf9ff 58%, #89d16b 58%, #69b04a 100%);
+        touch-action: none;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+        -webkit-user-select: none;
       }
 
       .overlay {
