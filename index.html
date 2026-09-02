@@ -317,7 +317,8 @@
             makePipe(W + 140 + PIPE_SPACING, clamp(startGap + randn() * 78, GAP_MIN, GAP_MAX))
           ],
           spawnTimer: 0.55,
-          lastGapY: startGap
+          lastGapY: startGap,
+          groundOffset: 0
         };
       }
 
@@ -465,13 +466,31 @@
         ctx.fillStyle = ground;
         ctx.fillRect(0, GROUND_Y, W, H - GROUND_Y);
 
+        drawMovingGround(state.mode === "playing" ? state.groundOffset : 0);
+      }
+
+      function drawMovingGround(offset) {
+        const tile = 34;
+        const bandY = GROUND_Y + 12;
+        const bandH = H - bandY;
+        const start = -((offset % tile) + tile);
+
         ctx.fillStyle = "rgba(255,255,255,0.16)";
         ctx.fillRect(0, GROUND_Y, W, 6);
 
-        for (let x = -20; x < W + 40; x += 34) {
-          ctx.fillStyle = "rgba(30, 78, 34, 0.18)";
-          ctx.fillRect(x, GROUND_Y + 18, 18, 4);
+        ctx.fillStyle = "rgba(43, 96, 41, 0.18)";
+        for (let x = start; x < W + tile; x += tile) {
+          ctx.fillRect(x, bandY, 18, 4);
+          ctx.fillRect(x + 10, bandY + 14, 10, 3);
         }
+
+        ctx.fillStyle = "rgba(57, 124, 53, 0.26)";
+        for (let x = start + 6; x < W + tile; x += tile) {
+          ctx.fillRect(x, bandY + 24, 14, 3);
+        }
+
+        ctx.fillStyle = "rgba(0, 0, 0, 0.04)";
+        ctx.fillRect(0, bandY + bandH - 2, W, 2);
       }
 
       function drawCloud(x, y, scale) {
@@ -730,6 +749,7 @@
           return;
         }
 
+        state.groundOffset = (state.groundOffset + PIPE_SPEED * dt) % 34;
         state.birdVY += GRAVITY * dt;
         state.birdY += state.birdVY * dt;
         state.birdAngle = clamp(state.birdVY / 700, -0.9, 1.1);
